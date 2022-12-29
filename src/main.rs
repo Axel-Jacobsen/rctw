@@ -34,6 +34,7 @@ fn word_freq<R: Read>(reader: BufReader<R>) -> HashMap<Vec<u8>, usize> {
             Err(e) => panic!("error reading file: {:?}", e),
         }
     }
+    hm.shrink_to_fit();
     hm
 }
 
