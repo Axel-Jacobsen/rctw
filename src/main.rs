@@ -18,7 +18,6 @@ fn load_fd() -> std::io::Result<File> {
         &args[1]
     };
 
-    println!("{:?}", fname);
     File::open(fname)
 }
 
