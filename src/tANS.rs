@@ -106,17 +106,11 @@ fn generate_table<'a>(symbol_freqs: &'a HashMap<Vec<u8>, u64>) -> HashMap<(&'a V
 
     let b = 2;
     for x in (total_num_symbols)..(b * total_num_symbols) {
-        let smallest_symbol = bh.pop();
-        match smallest_symbol {
-            Some(v) => {
-                table.insert((v.symbol, v.xs), x);
-                bh.push(value_pair_increment(v));
-            }
-            None => break, // TODO what to do here?
-        };
+        let smallest_symbol = bh.pop().unwrap();
+        table.insert((smallest_symbol.symbol, smallest_symbol.xs), x);
+        bh.push(value_pair_increment(smallest_symbol));
     }
 
-    //
     table
 }
 
