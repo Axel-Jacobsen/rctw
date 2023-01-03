@@ -52,7 +52,7 @@ fn value_pair_increment(vp: ValuePair) -> ValuePair {
         symbol: vp.symbol,
         prob: vp.prob,
         value: vp.value + (1 as f64) / vp.prob,
-        xs: vp.xs + 1
+        xs: vp.xs + 1,
     }
 }
 
@@ -85,7 +85,7 @@ impl<'a> PartialOrd for ValuePair<'a> {
     }
 }
 
-fn _generate_table<'a>(symbol_freqs: &'a HashMap<Vec<u8>, u64>) -> HashMap<(&'a Vec<u8>, u64), u64> {
+fn generate_table<'a>(symbol_freqs: &'a HashMap<Vec<u8>, u64>) -> HashMap<(&'a Vec<u8>, u64), u64> {
     let mut table = HashMap::new();
     let mut bh: BinaryHeap<ValuePair> = BinaryHeap::new();
 
@@ -96,20 +96,44 @@ fn _generate_table<'a>(symbol_freqs: &'a HashMap<Vec<u8>, u64>) -> HashMap<(&'a 
         let prob: f64 = (*freq as f64) / (total_num_symbols as f64);
         let value = 1. / (2. * prob);
         let xs = *freq;
-        bh.push(ValuePair {symbol, prob, value, xs})
+        bh.push(ValuePair {
+            symbol,
+            prob,
+            value,
+            xs,
+        })
     }
 
-    for x in (total_num_symbols)..(10 * total_num_symbols) {
+    let b = 2;
+    for x in (total_num_symbols)..(b * total_num_symbols) {
         let smallest_symbol = bh.pop();
         match smallest_symbol {
             Some(v) => {
                 table.insert((v.symbol, v.xs), x);
                 bh.push(value_pair_increment(v));
             }
-            None => break  // TODO what to do here?
+            None => break, // TODO what to do here?
         };
     }
 
     //
     table
+}
+
+#[cfg(test)]
+mod t_ans_tests {
+    use crate::tANS::generate_table;
+    use std::collections::HashMap;
+
+    #[test]
+    fn basic_table_gen() {
+        let mut hm = HashMap::new();
+        hm.insert(vec![0], 10);
+        hm.insert(vec![1], 5);
+        hm.insert(vec![2], 2);
+
+        let table = generate_table(&hm);
+
+        assert_eq!(table.len(), 17);
+    }
 }
