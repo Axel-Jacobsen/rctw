@@ -44,6 +44,16 @@ struct ValuePair<'a> {
     symbol: &'a Vec<u8>,
     prob: f64,
     value: f64,
+    xs: u64,
+}
+
+fn value_pair_increment(vp: ValuePair) -> ValuePair {
+    ValuePair {
+        symbol: vp.symbol,
+        prob: vp.prob,
+        value: vp.value + (1 as f64) / vp.prob,
+        xs: vp.xs + 1
+    }
 }
 
 // TODO why does this work?!?!
@@ -75,19 +85,31 @@ impl<'a> PartialOrd for ValuePair<'a> {
     }
 }
 
-fn _generate_table(symbol_freqs: HashMap<Vec<u8>, u64>) -> HashMap<(u8, u64), u64> {
-    let hm = HashMap::new();
+fn _generate_table<'a>(symbol_freqs: &'a HashMap<Vec<u8>, u64>) -> HashMap<(&'a Vec<u8>, u64), u64> {
+    let mut table = HashMap::new();
     let mut bh: BinaryHeap<ValuePair> = BinaryHeap::new();
 
-    let total_num_symbols: f64 = symbol_freqs.values().fold(0., |acc, e| acc + (*e as f64));
+    let total_num_symbols: u64 = symbol_freqs.values().fold(0, |acc, e| acc + *e);
 
     // init table
     for (symbol, freq) in symbol_freqs.iter() {
-        let prob: f64 = (*freq as f64) / total_num_symbols;
+        let prob: f64 = (*freq as f64) / (total_num_symbols as f64);
         let value = 1. / (2. * prob);
-        bh.push(ValuePair {symbol, prob, value})
+        let xs = *freq;
+        bh.push(ValuePair {symbol, prob, value, xs})
     }
 
+    for x in (total_num_symbols)..(10 * total_num_symbols) {
+        let smallest_symbol = bh.pop();
+        match smallest_symbol {
+            Some(v) => {
+                table.insert((v.symbol, v.xs), x);
+                bh.push(value_pair_increment(v));
+            }
+            None => break  // TODO what to do here?
+        };
+    }
 
-    hm
+    //
+    table
 }
