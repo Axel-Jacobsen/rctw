@@ -1,0 +1,86 @@
+/*
+ * ** tANS initialization **
+ *
+ * Assume we have l (total number of symbols), b (base for numeral system?), and
+ * a probability distribution of n symbols: 0 < p_1,...,p_n < 1, \sum_s p_s = 1.
+ *
+ * Assume that probabilities are defined w/ 1/l accuracy (?)
+ *
+ * l_s := l * p_s \in \nats
+ *
+ * Encoding is defined by distributing symbols in a nearly-uniform way on
+ *
+ * I = {l, ..., bl - 1}
+ *
+ * - Will have (b - 1) * l_s = (b - 1) * l * p_s appearances of symbol s
+ * - For every symbol s, eumerate its appearances by succeeding numbers from
+ *
+ * Is = {l_s, ..., b * l_s - 1}
+ *
+ * The challenge now is to find the optimal symbol distribution (i.e. make the table!)
+ * Once could enumerate all possible distributions, but that would be (l choose
+ * l_0,l_1,...,l_{n-1}) which is big. This is a fairly decend option, but it is not always
+ * optimal.
+ *
+ * ** Algorithm for decent initialization **
+ *
+ * First define
+ *
+ * N_s := {1 / 2*ps + i / ps : i \in \nats}
+ *
+ * These n sets are uniformally distributed w/ the req'd densities, but
+ * they are composed of real numbers, not natural numbers. To shift them
+ * into natural numbers, pick min of all symbols
+ *
+ */
+
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use std::collections::HashMap;
+
+// symbol used only for constructing this binary tree
+#[derive(PartialEq)]
+struct ValuePair<'a> {
+    symbol: &'a Vec<u8>,
+    freq: &'a u64,
+    value: f64,
+    index: u64,
+}
+
+// TODO why does this work?!?!
+impl Eq for ValuePair<'_> {}
+
+impl<'a> Ord for ValuePair<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // if self < other, return greater for min heap
+        if self.value < other.value {
+            Ordering::Greater
+        } else if self.value > other.value {
+            Ordering::Less
+        } else {
+            other.freq.cmp(&self.freq)
+        }
+    }
+}
+
+impl<'a> PartialOrd for ValuePair<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn _generate_table(symbol_freqs: HashMap<Vec<u8>, u64>) -> HashMap<(u8, u64), u64> {
+    let hm = HashMap::new();
+    let mut bh: BinaryHeap<ValuePair> = BinaryHeap::new();
+
+    let total_num_symbols: f64 = symbol_freqs.values().fold(0., |acc, e| acc + (*e as f64));
+
+    // init table
+    for (symbol, freq) in symbol_freqs.iter() {
+        let prob: f64 = (*freq as f64) / total_num_symbols;
+        let value = 1. / (2. * prob);
+        bh.push(ValuePair {symbol, freq, value, index: 0})
+    }
+
+    hm
+}

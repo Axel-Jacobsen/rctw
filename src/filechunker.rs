@@ -7,7 +7,7 @@ pub struct FileChunker<R> {
 
 impl<R: Read> FileChunker<R> {
     pub fn new(reader: R, word_chunksize: usize) -> Self {
-        FileChunker {
+        Self {
             reader,
             word_chunksize,
         }

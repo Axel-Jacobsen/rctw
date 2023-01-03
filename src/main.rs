@@ -1,9 +1,10 @@
-use std::collections::HashMap;
 use std::env;
 use std::fs::File;
+use std::collections::HashMap;
 use std::io::{BufReader, Read};
 
 mod filechunker;
+mod tANS;
 
 const CHUNK_SIZE: usize = 2; // chunk size, bytes
 
@@ -21,7 +22,8 @@ fn load_fd() -> std::io::Result<File> {
     File::open(fname)
 }
 
-fn word_freq<R: Read>(reader: BufReader<R>) -> HashMap<Vec<u8>, usize> {
+fn symbol_freq<R: Read>(reader: BufReader<R>) -> HashMap<Vec<u8>, u64> {
+    // TODO define type for this hashmap of symbols -> frequencies?
     let mut hm = HashMap::new();
     let file_chunker = filechunker::FileChunker::new(reader, CHUNK_SIZE);
     for chunk in file_chunker {
@@ -44,7 +46,6 @@ fn main() -> std::io::Result<()> {
     let reader = BufReader::new(fd);
     println!("{:?}", reader);
 
-    let r = word_freq(reader);
-    println!("{:?}", r);
+    let r = symbol_freq(reader);
     Ok(())
 }
