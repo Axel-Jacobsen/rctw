@@ -42,9 +42,8 @@ use std::collections::HashMap;
 #[derive(PartialEq)]
 struct ValuePair<'a> {
     symbol: &'a Vec<u8>,
-    freq: &'a u64,
+    prob: f64,
     value: f64,
-    index: u64,
 }
 
 // TODO why does this work?!?!
@@ -52,13 +51,20 @@ impl Eq for ValuePair<'_> {}
 
 impl<'a> Ord for ValuePair<'a> {
     fn cmp(&self, other: &Self) -> Ordering {
-        // if self < other, return greater for min heap
+        // BinaryHeap is, by default, a max heap.
+        // We implement `cmp` so it is a min heap.
+        // ValuePair is only used for this, so it is OK!
+        // Not accounted for: NaN in float values
         if self.value < other.value {
             Ordering::Greater
         } else if self.value > other.value {
             Ordering::Less
         } else {
-            other.freq.cmp(&self.freq)
+            if self.prob < other.prob {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
         }
     }
 }
@@ -79,8 +85,9 @@ fn _generate_table(symbol_freqs: HashMap<Vec<u8>, u64>) -> HashMap<(u8, u64), u6
     for (symbol, freq) in symbol_freqs.iter() {
         let prob: f64 = (*freq as f64) / total_num_symbols;
         let value = 1. / (2. * prob);
-        bh.push(ValuePair {symbol, freq, value, index: 0})
+        bh.push(ValuePair {symbol, prob, value})
     }
+
 
     hm
 }
