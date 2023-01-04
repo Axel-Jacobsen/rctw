@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 
 mod filechunker;
-mod tANS;
+mod t_ans;
 
 const CHUNK_SIZE: usize = 1; // chunk size, bytes
 
