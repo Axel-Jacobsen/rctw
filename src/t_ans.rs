@@ -116,7 +116,7 @@ fn generate_table<'a>(symbol_freqs: &'a HashMap<Vec<u8>, u64>) -> HashMap<(&'a V
 
 #[cfg(test)]
 mod t_ans_tests {
-    use crate::tANS::generate_table;
+    use crate::t_ans::generate_table;
     use std::collections::HashMap;
 
     #[test]
