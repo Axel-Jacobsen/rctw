@@ -6,6 +6,11 @@ use std::io::{BufReader, Read};
 mod filechunker;
 mod t_ans;
 
+/* TODO
+ * - Create a "symbol" type
+ *   - just so we aren't always passing around &Vec<Vec<u8>>
+ */
+
 const CHUNK_SIZE: usize = 1; // chunk size, bytes
 
 fn load_fd() -> std::io::Result<File> {
