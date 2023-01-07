@@ -50,8 +50,6 @@ fn main() -> std::io::Result<()> {
     let fd = load_fd()?;
 
     let reader = BufReader::new(fd);
-    println!("{:?}", reader);
-
     let _r = symbol_freq(reader, Some(CHUNK_SIZE));
     Ok(())
 }
