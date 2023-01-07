@@ -39,6 +39,7 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::ops::Range;
 
+#[allow(unused)]
 // symbol used only for constructing the code table
 #[derive(PartialEq)]
 struct ValuePair<'a> {
@@ -143,7 +144,7 @@ fn encode(values: &Vec<Vec<u8>>, code_table: HashMap<(&Vec<u8>, u64), u64>, conf
     let mut x = config.table_size;
     let valid_state_range = Range {
         start: config.table_size,
-        end: config.base * config.table_size
+        end: config.base * config.table_size,
     };
 
     for v in values {
@@ -153,7 +154,7 @@ fn encode(values: &Vec<Vec<u8>>, code_table: HashMap<(&Vec<u8>, u64), u64>, conf
 
 #[cfg(test)]
 mod t_ans_tests {
-    use crate::t_ans::generate_table;
+    use crate::t_ans::{generate_table, tANSConfig};
     use std::collections::HashMap;
 
     #[test]
@@ -163,7 +164,13 @@ mod t_ans_tests {
         hm.insert(vec![1], 5);
         hm.insert(vec![2], 2);
 
-        let table = generate_table(&hm);
+        let test_config = tANSConfig {
+            base: 2,
+            total_num_symbols: 3,
+            table_size: 17,
+        };
+
+        let table = generate_table(&hm, test_config);
         assert_eq!(table.len(), 17);
     }
 }
