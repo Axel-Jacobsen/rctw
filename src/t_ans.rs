@@ -39,6 +39,10 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::ops::Range;
 
+use std::io::Read;
+
+use crate::filechunker;
+
 #[allow(unused)]
 // symbol used only for constructing the code table
 #[derive(PartialEq)]
@@ -87,16 +91,16 @@ impl<'a> PartialOrd for ValuePair<'a> {
     }
 }
 
-struct tANSConfig {
-    base: u64,
-    total_num_symbols: u64,
-    table_size: u64,
+pub struct tANSConfig {
+    pub base: u64,
+    pub total_num_symbols: u64,
+    pub table_size: u64,
 }
 
-fn build_tans_config(symbol_freqs: &HashMap<Vec<u8>, u64>) -> tANSConfig {
+pub fn build_base_tans_config(symbol_freqs: &HashMap<Vec<u8>, u64>) -> tANSConfig {
     // TODO make base and table size configurable - perhaps by command line,
     // perhaps by env vars.
-    let base = 8;
+    let base = 2 << 8;
     let total_num_symbols: u64 = symbol_freqs.values().fold(0, |acc, e| acc + *e);
     let table_size: u64 = 8 * total_num_symbols;
 
@@ -107,9 +111,9 @@ fn build_tans_config(symbol_freqs: &HashMap<Vec<u8>, u64>) -> tANSConfig {
     }
 }
 
-fn generate_table<'a>(
+pub fn generate_table<'a>(
     symbol_freqs: &'a HashMap<Vec<u8>, u64>,
-    config: tANSConfig,
+    config: &tANSConfig,
 ) -> HashMap<(&'a Vec<u8>, u64), u64> {
     let mut table = HashMap::new();
     let mut bh: BinaryHeap<ValuePair> = BinaryHeap::new();
@@ -131,7 +135,7 @@ fn generate_table<'a>(
         })
     }
 
-    for x in l..(b as u64 * l) {
+    for x in l..((b as u64) * l) {
         let smallest_symbol = bh.pop().unwrap();
         table.insert((smallest_symbol.symbol, smallest_symbol.xs), x);
         bh.push(value_pair_increment(smallest_symbol));
@@ -140,15 +144,26 @@ fn generate_table<'a>(
     table
 }
 
-fn encode(values: &Vec<Vec<u8>>, code_table: HashMap<(&Vec<u8>, u64), u64>, config: tANSConfig) {
+pub fn encode<R: Read>(
+    file_chunker: filechunker::FileChunker<R>,
+    code_table: HashMap<(&Vec<u8>, u64), u64>,
+    config: tANSConfig,
+) {
     let mut x = config.table_size;
     let valid_state_range = Range {
         start: config.table_size,
         end: config.base * config.table_size,
     };
 
-    for v in values {
-        println!("{:?}", v);
+    for chunk in file_chunker {
+        match chunk {
+            Ok(ch) => {
+                // brackets because we gotta return none, and or_insert and
+                // and_modify return values
+                println!("{:?}", code_table.get(&(&ch, x)))
+            }
+            Err(e) => panic!("error reading file: {:?}", e),
+        }
     }
 }
 
@@ -170,7 +185,24 @@ mod t_ans_tests {
             table_size: 17,
         };
 
-        let table = generate_table(&hm, test_config);
+        let table = generate_table(&hm, &test_config);
         assert_eq!(table.len(), 17);
+    }
+
+    #[test]
+    fn basic_table_gen_byte_transfer() {
+        let mut hm = HashMap::new();
+        hm.insert(vec![0], 10);
+        hm.insert(vec![1], 5);
+        hm.insert(vec![2], 2);
+
+        let test_config = tANSConfig {
+            base: 2 << 8,
+            total_num_symbols: 3,
+            table_size: 17,
+        };
+
+        let table = generate_table(&hm, &test_config);
+        assert_eq!(table.len(), 8687);
     }
 }

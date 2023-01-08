@@ -50,7 +50,20 @@ fn main() -> std::io::Result<()> {
     let fd = load_fd()?;
 
     let reader = BufReader::new(fd);
-    let _r = symbol_freq(reader, Some(CHUNK_SIZE));
+    let symbol_freqs = symbol_freq(reader, Some(CHUNK_SIZE));
+
+    let cfg = t_ans::build_base_tans_config(&symbol_freqs);
+    let code_table = t_ans::generate_table(&symbol_freqs, &cfg);
+
+    // TODO this is hacky, repeating  myself
+    // either we gotta rewind fd (including bufreader?)
+    // or make this str -> filechunker process ez
+    let fd = load_fd()?;
+    let reader = BufReader::new(fd);
+    let file_chunker = filechunker::FileChunker::new(reader, CHUNK_SIZE);
+
+    t_ans::encode(file_chunker, code_table, cfg);
+
     Ok(())
 }
 
