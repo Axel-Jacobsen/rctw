@@ -91,20 +91,20 @@ impl<'a> PartialOrd for ValuePair<'a> {
     }
 }
 
-pub struct tANSConfig {
+pub struct TableANSConfig {
     pub base: u64,
     pub total_num_symbols: u64,
     pub table_size: u64,
 }
 
-pub fn build_base_tans_config(symbol_freqs: &HashMap<Vec<u8>, u64>) -> tANSConfig {
+pub fn build_base_tans_config(symbol_freqs: &HashMap<Vec<u8>, u64>) -> TableANSConfig {
     // TODO make base and table size configurable - perhaps by command line,
     // perhaps by env vars.
     let base = 2 << 8;
     let total_num_symbols: u64 = symbol_freqs.values().fold(0, |acc, e| acc + *e);
     let table_size: u64 = 8 * total_num_symbols;
 
-    tANSConfig {
+    TableANSConfig {
         base,
         table_size,
         total_num_symbols,
@@ -113,7 +113,7 @@ pub fn build_base_tans_config(symbol_freqs: &HashMap<Vec<u8>, u64>) -> tANSConfi
 
 pub fn generate_table<'a>(
     symbol_freqs: &'a HashMap<Vec<u8>, u64>,
-    config: &tANSConfig,
+    config: &TableANSConfig,
 ) -> HashMap<(&'a Vec<u8>, u64), u64> {
     let mut table = HashMap::new();
     let mut bh: BinaryHeap<ValuePair> = BinaryHeap::new();
@@ -144,32 +144,47 @@ pub fn generate_table<'a>(
     table
 }
 
-pub fn encode<R: Read>(
-    file_chunker: filechunker::FileChunker<R>,
+// pub fn encode<R: Read>(
+pub fn encode(
+    symbols: &Vec<Vec<u8>>,
+    // file_chunker: filechunker::FileChunker<R>,
     code_table: HashMap<(&Vec<u8>, u64), u64>,
-    config: tANSConfig,
+    config: TableANSConfig,
 ) {
-    let mut x = config.table_size;
+    let mut x = config.table_size; // State! :)
     let valid_state_range = Range {
         start: config.table_size,
         end: config.base * config.table_size,
     };
 
-    for chunk in file_chunker {
-        match chunk {
-            Ok(ch) => {
+    let mut symbol_counts: HashMap<Vec<u8>, u64> = HashMap::new();
+    symbol_counts.insert(vec![b'0'], 9);
+    symbol_counts.insert(vec![b'1'], 3);
+
+    for symbol in symbols {
+            // Ok(symbol) => {
                 // brackets because we gotta return none, and or_insert and
                 // and_modify return values
-                println!("{:?}", code_table.get(&(&ch, x)))
-            }
-            Err(e) => panic!("error reading file: {:?}", e),
+                let xs: &u64 = &symbol_counts.get(&symbol.to_vec()).unwrap();
+                // let xs: &mut u64 = symbol_counts
+                    // .entry(symbol.to_vec())
+                    // .and_modify(|e| *e += 1)
+                    // .or_insert(1);
+                // weee reference and dereference and reference and ...
+                println!("{:?}", (&symbol, *xs));
+                println!("{:?}\n", code_table.get(&(&symbol, *xs)));
+                symbol_counts
+                    .entry(symbol.to_vec())
+                    .and_modify(|e| *e += 1)
+                    .or_insert(1);
+            // }
+            // Err(e) => panic!("error reading file: {:?}", e),
         }
-    }
 }
 
 #[cfg(test)]
 mod t_ans_tests {
-    use crate::t_ans::{generate_table, tANSConfig};
+    use crate::t_ans::{generate_table, TableANSConfig, encode};
     use std::collections::HashMap;
 
     #[test]
@@ -179,7 +194,7 @@ mod t_ans_tests {
         hm.insert(vec![1], 5);
         hm.insert(vec![2], 2);
 
-        let test_config = tANSConfig {
+        let test_config = TableANSConfig {
             base: 2,
             total_num_symbols: 3,
             table_size: 17,
@@ -196,7 +211,7 @@ mod t_ans_tests {
         hm.insert(vec![1], 5);
         hm.insert(vec![2], 2);
 
-        let test_config = tANSConfig {
+        let test_config = TableANSConfig {
             base: 2 << 8,
             total_num_symbols: 3,
             table_size: 17,
@@ -204,5 +219,25 @@ mod t_ans_tests {
 
         let table = generate_table(&hm, &test_config);
         assert_eq!(table.len(), 8687);
+    }
+
+    #[test]
+    fn test_encode_basic() {
+        let mut hm = HashMap::new();
+        hm.insert(vec![b'0'], 9);
+        hm.insert(vec![b'1'], 4);
+
+        let test_config = TableANSConfig {
+            base: 2,
+            total_num_symbols: 2,
+            table_size: 9,
+        };
+
+        let table = generate_table(&hm, &test_config);
+        println!("{:?}", table);
+
+        let v = vec![vec![b'1'], vec![b'0'], vec![b'0'], vec![b'1'], vec![b'0'], vec![b'1']];
+
+        encode(&v, table, test_config);
     }
 }

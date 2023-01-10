@@ -35,8 +35,6 @@ fn symbol_freq<R: Read>(reader: BufReader<R>, chunk_size: Option<usize>) -> Hash
     for chunk in file_chunker {
         match chunk {
             Ok(ch) => {
-                // brackets because we gotta return none, and or_insert and
-                // and_modify return values
                 hm.entry(ch).and_modify(|e| *e += 1).or_insert(1);
             }
             Err(e) => panic!("error reading file: {:?}", e),
@@ -62,7 +60,7 @@ fn main() -> std::io::Result<()> {
     let reader = BufReader::new(fd);
     let file_chunker = filechunker::FileChunker::new(reader, CHUNK_SIZE);
 
-    t_ans::encode(file_chunker, code_table, cfg);
+    // t_ans::encode(file_chunker, code_table, cfg);
 
     Ok(())
 }
