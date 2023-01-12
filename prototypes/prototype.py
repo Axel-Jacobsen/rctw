@@ -5,7 +5,7 @@ import sys
 
 from pathlib import Path
 from math import log, floor
-from typing import Tuple, Generator
+from typing import List, Tuple, Generator
 from collections import defaultdict, OrderedDict
 
 """ testing rABS
@@ -52,7 +52,15 @@ def C(s: int, x: int, d: OrderedDict[int, int], m) -> int:
     return m * floor(x / ls) + bs + (x % ls)
 
 
-if __name__ == "__main__":
+def get_Is(s, I, d: OrderedDict[int, int], m) -> List[int]:
+    return list(D(i, d, m)[1] for i in I)
+
+
+def stream_encode(x: int, d: OrderedDict[int, int], m) -> Tuple[int, int]:
+    pass
+
+
+def base_attempt():
     freqs = symbol_freqs(sys.argv[1])
 
     num_chars = sum([v for v in freqs.values()])
@@ -61,7 +69,7 @@ if __name__ == "__main__":
     print(f"{len(freqs)=}")
     print(f"{freqs=}")
 
-    x = 10
+    x = 9
     for s in iter_over_file_bytes(sys.argv[1]):
         x = C(s, x, freqs, num_chars)
 
