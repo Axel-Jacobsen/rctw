@@ -5,7 +5,7 @@ import sys
 
 from pathlib import Path
 from math import log, floor, ceil
-from typing import List, Tuple, Generator
+from typing import Dict, List, Tuple, Generator
 from collections import defaultdict, OrderedDict
 
 
@@ -79,6 +79,17 @@ class uABS2:
         raise ValueError(f"got invalid value for s: {s}")
 
 
+def get_Is(coder, I) -> Dict[int, List[int]]:
+    vs: List[Tuple[int,int]] = [coder.D(x) for x in I]
+
+    d = defaultdict(list)
+
+    for x, s in vs:
+        d[s].append(x)
+
+    return dict(d)
+
+
 def enc_dec(coder):
     seq = [1, 0, 0, 1, 0, 1, 0, 0]
     expecting = [3, 5, 8, 26, 38, 128, 184, 264]
@@ -102,9 +113,6 @@ def enc_dec(coder):
 if __name__ == "__main__":
 
     coder = uABS(0.3)
+    print(get_Is(coder, range(9,18)))
 
-    enc_dec(coder)
-
-    coder2 = uABS2(0.3)
-
-    enc_dec(coder2)
+    # enc_dec(coder)
