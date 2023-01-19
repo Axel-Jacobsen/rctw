@@ -80,7 +80,7 @@ class uABS2:
 
 
 def get_Is(coder, I) -> Dict[int, List[int]]:
-    vs: List[Tuple[int,int]] = [coder.D(x) for x in I]
+    vs: List[Tuple[int, int]] = [coder.D(x) for x in I]
 
     d = defaultdict(list)
 
@@ -88,6 +88,35 @@ def get_Is(coder, I) -> Dict[int, List[int]]:
         d[s].append(x)
 
     return dict(d)
+
+
+def stream_encode(input_stream, coder, I, b=2):
+    Iss = get_Is(coder, I)
+
+    x = I[0]
+    output_stream = []
+
+    for s in input_stream:
+        while x not in Iss[s]:
+            output_stream.append(x % b)
+            x //= b
+
+        x = coder.C(x, s)
+    return x
+
+
+def get_lsb(x, b=2) -> Tuple[int, int]:
+    lsb = x & 1
+    return x >> 1, lsb
+
+
+def stream_decode(x, coder, I, b=2):
+    while x > I[0]:
+        s, x = coder.D(x)
+        output_stream.append(s)
+
+        while x not in I:
+            x, lsb = (0, 0)  # TODO
 
 
 def enc_dec(coder):
@@ -110,9 +139,15 @@ def enc_dec(coder):
 
     print(ss[::-1])
 
+
 if __name__ == "__main__":
 
     coder = uABS(0.3)
-    print(get_Is(coder, range(9,18)))
+    print(get_Is(coder, range(9, 18)))
 
+    seq = [1, 0, 0, 1, 0, 1, 0, 0]
+    x = stream_encode(seq, coder, range(9, 18))
+    print(f"{x=}")
+    print(f"{log(x, 2)=}")
+    print(f"original size={len(seq)}")
     # enc_dec(coder)
