@@ -8,6 +8,9 @@ from math import log, floor, ceil
 from typing import Dict, List, Tuple, Generator
 from collections import defaultdict, OrderedDict
 
+State = int
+Symbol = int
+
 
 def iter_over_file_bytes(p: str) -> Generator[int, None, None]:
     with open(p, "rb") as f:
@@ -24,7 +27,7 @@ class uABS:
         assert 0 < p1 < 1
         self.p1 = p1
 
-    def D(self, x) -> Tuple[int, int]:
+    def D(self, x: State) -> Tuple[State, Symbol]:
         p = self.p1
 
         s = ceil((x + 1) * p) - ceil(x * p)
@@ -38,7 +41,7 @@ class uABS:
 
         return (xs, s)
 
-    def C(self, x, s) -> int:
+    def C(self, x: State, s: Symbol) -> State:
         p = self.p1
 
         if s == 0:
@@ -49,37 +52,7 @@ class uABS:
         raise ValueError(f"got invalid value for s: {s}")
 
 
-class uABS2:
-    def __init__(self, p1: float):
-        assert 0 < p1 < 1
-        self.p1 = p1
-
-    def D(self, x) -> Tuple[int, int]:
-        p = self.p1
-
-        s = floor((x + 1) * p) - floor(x * p)
-
-        if s == 0:
-            xs = x - floor(x * p)
-        elif s == 1:
-            xs = floor(x * p)
-        else:
-            raise ValueError(f"got invalid value for s: {s}")
-
-        return (xs, s)
-
-    def C(self, x, s) -> int:
-        p = self.p1
-
-        if s == 0:
-            return floor(x / (1 - p))
-        elif s == 1:
-            return ceil((x + 1) / p) - 1
-
-        raise ValueError(f"got invalid value for s: {s}")
-
-
-def get_Is(coder, I) -> Dict[int, List[int]]:
+def get_Is(coder, I) -> Dict[Symbol, List[State]]:
     vs: List[Tuple[int, int]] = [coder.D(x) for x in I]
 
     d = defaultdict(list)
@@ -90,7 +63,7 @@ def get_Is(coder, I) -> Dict[int, List[int]]:
     return dict(d)
 
 
-def stream_encode(input_stream, coder, I, b=2):
+def stream_encode(input_stream, coder, I, b=2) -> Tuple[State, List[int]]:
     Iss = get_Is(coder, I)
 
     x = I[0]
@@ -99,55 +72,33 @@ def stream_encode(input_stream, coder, I, b=2):
     for s in input_stream:
         while x not in Iss[s]:
             output_stream.append(x % b)
-            x //= b
+            x /= b
 
         x = coder.C(x, s)
-    return x
+    return x, output_stream
 
 
-def get_lsb(x, b=2) -> Tuple[int, int]:
-    lsb = x & 1
-    return x >> 1, lsb
-
-
-def stream_decode(x, coder, I, b=2):
+def stream_decode(x, output_stream, coder, I, b=2) -> List[Symbol]:
+    symbols = []
     while x > I[0]:
-        s, x = coder.D(x)
-        output_stream.append(s)
+        x, s = coder.D(x)
+        symbols.append(s)
 
         while x not in I:
-            x, lsb = (0, 0)  # TODO
+            new_bit = output_stream.pop()
+            x = x * b + new_bit
 
-
-def enc_dec(coder):
-    seq = [1, 0, 0, 1, 0, 1, 0, 0]
-    expecting = [3, 5, 8, 26, 38, 128, 184, 264]
-    x = 1
-    ss = []
-    for s, expected in zip(seq, expecting):
-        x = coder.C(x, s)
-        ss.append(s)
-        print(f"got {x} expected {expected}")
-
-    print(ss)
-
-    ss = []
-    while x > 1:
-        xs, s = coder.D(x)
-        x = xs
-        ss.append(s)
-
-    print(ss[::-1])
+    return output_stream
 
 
 if __name__ == "__main__":
-
     coder = uABS(0.3)
-    print(get_Is(coder, range(9, 18)))
 
     seq = [1, 0, 0, 1, 0, 1, 0, 0]
-    x = stream_encode(seq, coder, range(9, 18))
-    print(f"{x=}")
+    print(f"{seq=}")
+    x, bitstream = stream_encode(seq, coder, range(9, 18))
+    print(f"{x=}, {bitstream=}")
     print(f"{log(x, 2)=}")
     print(f"original size={len(seq)}")
-    # enc_dec(coder)
+    output_stream = stream_decode(x, bitstream, coder, range(9, 18), b=2)
+    print(f"{output_stream=}")
