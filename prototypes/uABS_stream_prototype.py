@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
+import abc
 import sys
-
 
 from pathlib import Path
 from math import log, floor, ceil
@@ -22,12 +22,22 @@ def iter_over_file_bytes(p: str) -> Generator[int, None, None]:
                 yield c
 
 
-class uABS:
+class Coder(abc.ABC):
+    @abc.abstractmethod
+    def D(self, x: State) -> Tuple[State, Symbol]:
+        ...
+
+    @abc.abstractmethod
+    def C(self, x: State, s: Symbol) -> State:
+        ...
+
+
+class uABS(Coder):
     def __init__(self, p1: float):
         assert 0 < p1 < 1
         self.p1 = p1
 
-    def D(self, x: State) -> Tuple[State, Symbol]:
+    def D(self, x: State) -> Tuple[Symbol, State]:
         p = self.p1
 
         s = ceil((x + 1) * p) - ceil(x * p)
@@ -39,7 +49,7 @@ class uABS:
         else:
             raise ValueError(f"got invalid value for s: {s}")
 
-        return (xs, s)
+        return (s, xs)
 
     def C(self, x: State, s: Symbol) -> State:
         p = self.p1
@@ -52,53 +62,80 @@ class uABS:
         raise ValueError(f"got invalid value for s: {s}")
 
 
-def get_Is(coder, I) -> Dict[Symbol, List[State]]:
-    vs: List[Tuple[int, int]] = [coder.D(x) for x in I]
 
-    d = defaultdict(list)
+def stream_encode(coder: Coder, input_seq: List[Symbol], F_0: int, F_1: int) -> Tuple[List[int], State]:
+    "limited case of list of 0s and 1s, b=2"
 
-    for x, s in vs:
-        d[s].append(x)
+    assert all(s in (0,1) for s in input_seq)
 
-    return dict(d)
+    M = F_0 + F_1
+
+    # configurable, any in Z+
+    l = 9
+
+    # base, also configurable
+    b = 2
+
+    I = range(l * M, 2 * l * M - 1)
+    I0 = range(l * F_0, 2 * l * F_0 - 1)
+    I1 = range(l * F_1, 2 * l * F_1 - 1)
+    Is = {0: I0, 1: I1}
+
+    state = l * M  # I[0]
+
+    output_stream: List[int] = []
+
+    for symbol in input_seq:
+        print(f"{state}", f"{symbol}")
+        while state not in Is[symbol]:
+            output_stream.append(state % b)
+            state //= b
+        state = coder.C(state, symbol)
+
+    return output_stream, state
 
 
-def stream_encode(input_stream, coder, I, b=2) -> Tuple[State, List[int]]:
-    Iss = get_Is(coder, I)
+def stream_decode(coder: Coder, coded_seq: List[Symbol], init_state: State, F_0: int, F_1: int) -> List[Symbol]:
+    "limited case of list of 0s and 1s, b=2"
 
-    x = I[0]
-    output_stream = []
+    M = F_0 + F_1
 
-    for s in input_stream:
-        while x not in Iss[s]:
-            output_stream.append(x % b)
-            x /= b
+    # configurable, any in Z+
+    l = 9
 
-        x = coder.C(x, s)
-    return x, output_stream
+    # base, also configurable
+    b = 2
 
+    I = range(l * M, 2 * l * M - 1)
+    I0 = range(l * F_0, 2 * l * F_0 - 1)
+    I1 = range(l * F_1, 2 * l * F_1 - 1)
+    Is = {0: I0, 1: I1}
 
-def stream_decode(x, output_stream, coder, I, b=2) -> List[Symbol]:
-    symbols = []
-    while x > I[0]:
-        x, s = coder.D(x)
-        symbols.append(s)
+    final_state = l * M  # I[0]
+    state = init_state
 
-        while x not in I:
-            new_bit = output_stream.pop()
-            x = x * b + new_bit
+    decoded_stream: List[int] = []
 
-    return output_stream
+    while state != final_state:
+        symbol, state = coder.D(state)
+        decoded_stream.append(symbol)
+
+        while state not in I:
+            state = state * b + coded_seq.pop()
+
+    return decoded_stream
+
 
 
 if __name__ == "__main__":
     coder = uABS(0.3)
 
-    seq = [1, 0, 0, 1, 0, 1, 0, 0]
-    print(f"{seq=}")
-    x, bitstream = stream_encode(seq, coder, range(9, 18))
-    print(f"{x=}, {bitstream=}")
-    print(f"{log(x, 2)=}")
-    print(f"original size={len(seq)}")
-    output_stream = stream_decode(x, bitstream, coder, range(9, 18), b=2)
-    print(f"{output_stream=}")
+    input_seq = [1,0,0,1,0,1]
+    M = len(input_seq)
+    F_1 = sum(input_seq)
+    F_0 = M - F_1
+
+    output_stream, fin_state = stream_encode(coder, input_seq, F_0, F_1)
+    print(output_stream, fin_state)
+    decoded = stream_decode(coder, output_stream, fin_state, F_0, F_1)
+    print(f"{decoded=}")
