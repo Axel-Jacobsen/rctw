@@ -21,7 +21,7 @@ def iter_over_file_bytes(p: str) -> Generator[int, None, None]:
                 yield c
 
 
-def get_Is(coder, I) -> Dict[int, List[int]]:
+def get_Is(coder: Coder, I: range) -> Dict[int, List[int]]:
     vs: List[Tuple[int, int]] = [coder.D(x) for x in I]
 
     d = defaultdict(list)
@@ -90,7 +90,7 @@ def stream_decode(
     return decoded_stream
 
 
-def coder_decoder_test(coder, freqs):
+def coder_decoder_test(coder: Coder, freqs: Dict[Symbol, int]) -> None:
     for k in freqs:
         for i in range(0, sum(freqs.values())):
             # C \circ D = D \circ C = id
