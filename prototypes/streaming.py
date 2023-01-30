@@ -80,7 +80,7 @@ def stream_decode(
     decoded_stream: List[int] = []
     state = init_state
 
-    for _ in range(M + 1):
+    while len(decoded_stream) < M:
         symbol, state = coder.D(state)
         decoded_stream.append(symbol)
 
@@ -104,19 +104,18 @@ if __name__ == "__main__":
 
     freqs = {0: 3, 1: 3, 2: 2}
     coder = rANS(freqs)
+    num_symbols = sum(freqs.values())
 
     coder_decoder_test(coder, freqs)
 
     vs = freqs.items()
-    input_seq = random.choices([v[0] for v in vs], weights=[v[1] for v in vs], k=10)
-    input_seq = [0, 1, 0, 2, 2, 0, 2, 1, 2]
+    input_seq = random.choices(
+        [v[0] for v in vs], weights=[v[1] for v in vs], k=num_symbols
+    )
 
-    l = 1
-    b = 2
+    l, b = 1, 2
+
     output_stream, fin_state = stream_encode(coder, input_seq, freqs, l=l, b=b)
-
-    print(f"encoded_stream={output_stream}, {fin_state=}")
-
     decoded = stream_decode(coder, output_stream, fin_state, freqs, l=l, b=b)
 
-    assert input_seq == decoded[::-1], f"\n{input_seq=}\n{  decoded[::-1]=}"
+    assert input_seq == decoded[::-1], f"\n{input_seq=}\n{decoded[::-1]=}"
