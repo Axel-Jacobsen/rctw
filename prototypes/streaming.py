@@ -33,21 +33,18 @@ def get_Is(coder, I) -> Dict[int, List[int]]:
 
 
 def stream_encode(
-    coder: Coder, input_seq: List[Symbol], freqs: Dict[Symbol, int], l: int
+    coder: Coder,
+    input_seq: List[Symbol],
+    freqs: Dict[Symbol, int],
+    l: int = 9,
+    b: int = 2,
 ) -> Tuple[List[int], State]:
-    "limited case of list of 0s and 1s, b=2"
     M = sum(freqs.values())
-
-    # configurable, any in Z+
-    l = 9
-
-    # base, also configurable
-    b = 2
 
     I = range(l * M, 2 * l * M - 1)
     Is = get_Is(coder, I)
 
-    state = l * M  # I[0]
+    state = l * M
 
     output_stream: List[int] = []
 
@@ -55,25 +52,22 @@ def stream_encode(
         while state not in Is[symbol]:
             output_stream.append(state % b)
             state //= b
-        state = coder.C(state, symbol)
+        state = coder.C(symbol, state)
 
     return output_stream, state
 
 
 def stream_decode(
-    coder: Coder, coded_seq: List[Symbol], init_state: State, F_0: int, F_1: int
+    coder: Coder,
+    coded_seq: List[Symbol],
+    init_state: State,
+    freqs: Dict[Symbol, int],
+    l: int = 9,
+    b: int = 2,
 ) -> List[Symbol]:
-    "limited case of list of 0s and 1s, b=2"
+    M = sum(freqs.values())
 
-    M = F_0 + F_1
-
-    # configurable, any in Z+
-    l = 9
-
-    # base, also configurable
-    b = 2
-
-    I = range(9, 18)
+    I = range(l * M, 2 * l * M - 1)
     Is = get_Is(coder, I)
 
     final_state = l * M  # I[0]
@@ -92,20 +86,25 @@ def stream_decode(
 
 
 if __name__ == "__main__":
-    freqs = {0: 3, 1: 3, 2: 2}
+    import random
+
+    freqs = {9: 3, 1: 3, 2: 2}
     coder = rANS(freqs)
 
     for k in freqs:
         for i in range(0, sum(freqs.values())):
             # C \circ D = D \circ C = id
-            assert coder.D(coder.C(k, i)) == (k, i), f"{coder.D(coder.C(k, i))=} == {(k, i)=}"
+            cond = coder.D(coder.C(k, i)) == (k, i)
+            woopsies_string = f"{coder.D(coder.C(k, i))=} == {(k, i)=}"
+            assert cond, woopsies_string
 
-    # input_seq = [0,1,0,2,2,0,2,1,2]
-    # M = len(input_seq)
-    # F_1 = sum(input_seq)
-    # F_0 = M - F_1
+    vs = freqs.items()
+    input_seq = random.choices([v[0] for v in vs], weights=[v[1] for v in vs], k=10)
+    print(input_seq)
 
-    # output_stream, fin_state = stream_encode(coder, input_seq, F_0, F_1)
-    # print(output_stream, fin_state)
-    # decoded = stream_decode(coder, output_stream, fin_state, F_0, F_1)
-    # print(f"{decoded=}")
+    output_stream, fin_state = stream_encode(coder, input_seq, freqs)
+    decoded = stream_decode(coder, output_stream, fin_state, freqs)
+
+    assert (
+        input_seq == decoded[::-1]
+    ), f"\n{input_seq=}\n{  decoded[::-1]=}\n{input_seq=}"
