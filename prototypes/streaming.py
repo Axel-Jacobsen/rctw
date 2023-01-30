@@ -92,17 +92,18 @@ def stream_decode(
 
 
 if __name__ == "__main__":
-    freqs = {0: 300, 1: 3000, 2: 2}
+    freqs = {0: 3, 1: 3, 2: 2}
     coder = rANS(freqs)
 
-    for i in range(0, sum(freqs.values())):
-        # C \circ D = D \circ C = id
-        assert coder.D(coder.C(0, i)) == (0, i)
+    for k in freqs:
+        for i in range(0, sum(freqs.values())):
+            # C \circ D = D \circ C = id
+            assert coder.D(coder.C(k, i)) == (k, i), f"{coder.D(coder.C(k, i))=} == {(k, i)=}"
 
-    input_seq = [0,1,0,2,2,0,2,1,2]
-    M = len(input_seq)
-    F_1 = sum(input_seq)
-    F_0 = M - F_1
+    # input_seq = [0,1,0,2,2,0,2,1,2]
+    # M = len(input_seq)
+    # F_1 = sum(input_seq)
+    # F_0 = M - F_1
 
     # output_stream, fin_state = stream_encode(coder, input_seq, F_0, F_1)
     # print(output_stream, fin_state)

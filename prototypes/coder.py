@@ -30,16 +30,17 @@ class rANS(Coder):
 
         s = 0
         for k in sorted(symbol_frequencies):
-            s += symbol_frequencies[k]
             self._bs[k] = s
+            s += symbol_frequencies[k]
 
     @lru_cache(maxsize=512)
     def _s(self, x: State) -> Symbol:
-        s = 0
+        cumulative_sum = 0
+
         for i, k in enumerate(sorted(self.freqs)):
-            s += self.freqs[k]
-            if x < s:
-                return i - 1
+            cumulative_sum += self.freqs[k]
+            if x < cumulative_sum:
+                return k
 
         raise ValueError("couldn't do it")
 
@@ -48,7 +49,7 @@ class rANS(Coder):
         li = self.freqs[s]
         bs = self._bs[s]
 
-        return m * (x // li) + bs + x % li
+        return m * (x // li) + x % li + bs
 
     def D(self, x: State) -> Tuple[Symbol, State]:
         m = self._m
