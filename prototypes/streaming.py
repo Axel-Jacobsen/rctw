@@ -49,7 +49,7 @@ def stream_encode(
     output_stream: List[int] = []
 
     for symbol in input_seq:
-        while state >= b * freqs[symbol]:
+        while state >= l * b * freqs[symbol]:
             next_out_bit = state % b
             output_stream.append(next_out_bit)
             state //= b
@@ -102,8 +102,9 @@ def coder_decoder_test(coder, freqs):
 if __name__ == "__main__":
     import random
 
-    freqs = {0: 3, 1: 3, 2: 2}
+    freqs = {0: 400, 1: 800, 2: 200}
     coder = rANS(freqs)
+    num_unique_symbols = sum(freqs.keys())
     num_symbols = sum(freqs.values())
 
     coder_decoder_test(coder, freqs)
@@ -113,9 +114,13 @@ if __name__ == "__main__":
         [v[0] for v in vs], weights=[v[1] for v in vs], k=num_symbols
     )
 
-    l, b = 1, 2
+    l, b = 9, 8
 
     output_stream, fin_state = stream_encode(coder, input_seq, freqs, l=l, b=b)
+    print(
+        f"approx size of input? {num_symbols * log(num_unique_symbols, 2)}",
+        f"approx size of compressed? {len(output_stream) + ceil(log(fin_state, 2))}",
+    )
     decoded = stream_decode(coder, output_stream, fin_state, freqs, l=l, b=b)
 
-    assert input_seq == decoded[::-1], f"\n{input_seq=}\n{decoded[::-1]=}"
+    assert input_seq == decoded[::-1], f"\n{len(input_seq)=}\n{len(decoded[::-1])=}"
