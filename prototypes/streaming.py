@@ -33,13 +33,10 @@ def get_Is(coder, I) -> Dict[int, List[int]]:
 
 
 def stream_encode(
-    coder: Coder, input_seq: List[Symbol], F_0: int, F_1: int
+    coder: Coder, input_seq: List[Symbol], freqs: Dict[Symbol, int], l: int
 ) -> Tuple[List[int], State]:
     "limited case of list of 0s and 1s, b=2"
-
-    assert all(s in (0, 1) for s in input_seq)
-
-    M = F_0 + F_1
+    M = sum(freqs.values())
 
     # configurable, any in Z+
     l = 9
@@ -48,11 +45,9 @@ def stream_encode(
     b = 2
 
     I = range(l * M, 2 * l * M - 1)
-    I = range(9, 18)
     Is = get_Is(coder, I)
 
     state = l * M  # I[0]
-    state = 9
 
     output_stream: List[int] = []
 
@@ -82,7 +77,6 @@ def stream_decode(
     Is = get_Is(coder, I)
 
     final_state = l * M  # I[0]
-    final_state = 9
 
     decoded_stream: List[int] = []
     state = init_state
@@ -98,19 +92,17 @@ def stream_decode(
 
 
 if __name__ == "__main__":
-    freqs = {0: 3, 1: 3, 2: 2}
+    freqs = {0: 300, 1: 3000, 2: 2}
     coder = rANS(freqs)
 
     for i in range(0, sum(freqs.values())):
-        assert coder.D(coder.C(0, i)) == (
-            0,
-            i,
-        ), f"{i} {coder.C(0, i)=} {coder.D(coder.C(0, i))=}, {(0, i)=}"
+        # C \circ D = D \circ C = id
+        assert coder.D(coder.C(0, i)) == (0, i)
 
-    # input_seq = [0,1,0,2,2,0,2,1,2]
-    # M = len(input_seq)
-    # F_1 = sum(input_seq)
-    # F_0 = M - F_1
+    input_seq = [0,1,0,2,2,0,2,1,2]
+    M = len(input_seq)
+    F_1 = sum(input_seq)
+    F_0 = M - F_1
 
     # output_stream, fin_state = stream_encode(coder, input_seq, F_0, F_1)
     # print(output_stream, fin_state)

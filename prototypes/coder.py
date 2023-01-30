@@ -36,10 +36,10 @@ class rANS(Coder):
     @lru_cache(maxsize=512)
     def _s(self, x: State) -> Symbol:
         s = 0
-        for k in sorted(self.freqs):
+        for i, k in enumerate(sorted(self.freqs)):
             s += self.freqs[k]
             if x < s:
-                return k - 1
+                return i - 1
 
         raise ValueError("couldn't do it")
 
