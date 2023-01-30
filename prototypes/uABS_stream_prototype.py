@@ -33,45 +33,6 @@ class Coder(abc.ABC):
         ...
 
 
-class uABS(Coder):
-    """This suffers from floating point arithmetic error!
-
-    You will get intermediate values of e.g. 30.000000000000004
-    that *should* be 30, which you take the ceil of which gives
-    you 31 which messes everything up. No wonder why this wasn't
-    working!
-    """
-
-    def __init__(self, p1: float):
-        assert 0 < p1 < 1
-        self.p1 = p1
-
-    def D(self, x: State) -> Tuple[Symbol, State]:
-        p = self.p1
-
-        s = ceil((x + 1) * p) - ceil(x * p)
-
-        if s == 0:
-            xs = x - ceil(x * p)
-        elif s == 1:
-            xs = ceil(x * p)
-        else:
-            raise ValueError(f"got invalid value for s: {s}")
-
-        return (s, xs)
-
-    def C(self, s: Symbol, x: State) -> State:
-        p = self.p1
-
-        if s == 0:
-            print((x + 1) / (1 - p))
-            return ceil((x + 1) / (1 - p)) - 1
-        elif s == 1:
-            return floor(x / p)
-
-        raise ValueError(f"got invalid value for s: {s}")
-
-
 class rANS(Coder):
     def __init__(self, symbol_frequencies: Dict[Symbol, int]):
         self.freqs: Dict[Symbol, int] = symbol_frequencies
@@ -194,7 +155,10 @@ if __name__ == "__main__":
     coder = rANS(freqs)
 
     for i in range(0, sum(freqs.values())):
-        assert coder.D(coder.C(0, i)) == (0, i), f"{i} {coder.C(0, i)=} {coder.D(coder.C(0, i))=}, {(0, i)=}"
+        assert coder.D(coder.C(0, i)) == (
+            0,
+            i,
+        ), f"{i} {coder.C(0, i)=} {coder.D(coder.C(0, i))=}, {(0, i)=}"
 
     # input_seq = [0,1,0,2,2,0,2,1,2]
     # M = len(input_seq)
