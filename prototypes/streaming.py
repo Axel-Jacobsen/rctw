@@ -5,12 +5,10 @@ import sys
 
 from pathlib import Path
 from math import log, floor, ceil
-from functools import lru_cache
 from typing import Dict, List, Tuple, Generator
 from collections import defaultdict, OrderedDict
 
-State = int
-Symbol = int
+from coder import rANS, Coder, State, Symbol
 
 
 def iter_over_file_bytes(p: str) -> Generator[int, None, None]:
@@ -21,57 +19,6 @@ def iter_over_file_bytes(p: str) -> Generator[int, None, None]:
                 return
             for c in chunk:
                 yield c
-
-
-class Coder(abc.ABC):
-    @abc.abstractmethod
-    def D(self, x: State) -> Tuple[Symbol, State]:
-        ...
-
-    @abc.abstractmethod
-    def C(self, s: Symbol, x: State) -> State:
-        ...
-
-
-class rANS(Coder):
-    def __init__(self, symbol_frequencies: Dict[Symbol, int]):
-        self.freqs: Dict[Symbol, int] = symbol_frequencies
-
-        # cache total freqs!
-        self._m = sum(symbol_frequencies.values())
-
-        self._bs = dict()
-
-        s = 0
-        for k in sorted(symbol_frequencies):
-            s += symbol_frequencies[k]
-            self._bs[k] = s
-
-    @lru_cache(maxsize=512)
-    def _s(self, x: State) -> Symbol:
-        s = 0
-        for k in sorted(self.freqs):
-            s += self.freqs[k]
-            if x < s:
-                return k - 1
-
-        raise ValueError("couldn't do it")
-
-    def C(self, s: Symbol, x: State) -> State:
-        m = self._m
-        li = self.freqs[s]
-        bs = self._bs[s]
-
-        return m * (x // li) + bs + x % li
-
-    def D(self, x: State) -> Tuple[Symbol, State]:
-        m = self._m
-        s = self._s(x % m)
-
-        li = self.freqs[s]
-        bs = self._bs[s]
-
-        return s, li * (x // m) + x % m - bs
 
 
 def get_Is(coder, I) -> Dict[int, List[int]]:
