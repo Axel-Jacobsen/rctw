@@ -37,7 +37,7 @@ fn symbol_freq<R: Read>(reader: BufReader<R>, chunk_size: Option<usize>) -> Hash
             Ok(ch) => {
                 hm.entry(ch).and_modify(|e| *e += 1).or_insert(1);
             }
-            Err(e) => panic!("error reading file: {:?}", e),
+            Err(e) => panic!("error reading file: {e:?}"),
         }
     }
     hm.shrink_to_fit();
@@ -51,14 +51,14 @@ fn main() -> std::io::Result<()> {
     let symbol_freqs = symbol_freq(reader, Some(CHUNK_SIZE));
 
     let cfg = t_ans::build_base_tans_config(&symbol_freqs);
-    let code_table = t_ans::generate_table(&symbol_freqs, &cfg);
+    let _code_table = t_ans::generate_table(&symbol_freqs, &cfg);
 
     // TODO this is hacky, repeating  myself
     // either we gotta rewind fd (including bufreader?)
     // or make this str -> filechunker process ez
     let fd = load_fd()?;
     let reader = BufReader::new(fd);
-    let file_chunker = filechunker::FileChunker::new(reader, CHUNK_SIZE);
+    let _file_chunker = filechunker::FileChunker::new(reader, CHUNK_SIZE);
 
     // t_ans::encode(file_chunker, code_table, cfg);
 

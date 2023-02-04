@@ -39,9 +39,9 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::ops::Range;
 
-use std::io::Read;
 
-use crate::filechunker;
+
+
 
 #[allow(unused)]
 // symbol used only for constructing the code table
@@ -75,12 +75,10 @@ impl<'a> Ord for ValuePair<'a> {
             Ordering::Greater
         } else if self.value > other.value {
             Ordering::Less
+        } else if self.prob < other.prob {
+            Ordering::Greater
         } else {
-            if self.prob < other.prob {
-                Ordering::Greater
-            } else {
-                Ordering::Less
-            }
+            Ordering::Less
         }
     }
 }
@@ -135,7 +133,7 @@ pub fn generate_table<'a>(
         })
     }
 
-    for x in l..((b as u64) * l) {
+    for x in l..(b * l) {
         let smallest_symbol = bh.pop().unwrap();
         table.insert((smallest_symbol.symbol, smallest_symbol.xs), x);
         bh.push(value_pair_increment(smallest_symbol));
@@ -151,8 +149,8 @@ pub fn encode(
     code_table: HashMap<(&Vec<u8>, u64), u64>,
     config: TableANSConfig,
 ) {
-    let mut x = config.table_size; // State! :)
-    let valid_state_range = Range {
+    let _x = config.table_size; // State! :)
+    let _valid_state_range = Range {
         start: config.table_size,
         end: config.base * config.table_size,
     };
@@ -165,14 +163,14 @@ pub fn encode(
             // Ok(symbol) => {
                 // brackets because we gotta return none, and or_insert and
                 // and_modify return values
-                let xs: &u64 = &symbol_counts.get(&symbol.to_vec()).unwrap();
+                let xs: &u64 = symbol_counts.get(&symbol.to_vec()).unwrap();
                 // let xs: &mut u64 = symbol_counts
                     // .entry(symbol.to_vec())
                     // .and_modify(|e| *e += 1)
                     // .or_insert(1);
                 // weee reference and dereference and reference and ...
                 println!("{:?}", (&symbol, *xs));
-                println!("{:?}\n", code_table.get(&(&symbol, *xs)));
+                println!("{:?}\n", code_table.get(&(symbol, *xs)));
                 symbol_counts
                     .entry(symbol.to_vec())
                     .and_modify(|e| *e += 1)
@@ -234,7 +232,7 @@ mod t_ans_tests {
         };
 
         let table = generate_table(&hm, &test_config);
-        println!("{:?}", table);
+        println!("{table:?}");
 
         let v = vec![vec![b'1'], vec![b'0'], vec![b'0'], vec![b'1'], vec![b'0'], vec![b'1']];
 
