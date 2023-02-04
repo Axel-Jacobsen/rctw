@@ -39,10 +39,6 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::ops::Range;
 
-
-
-
-
 #[allow(unused)]
 // symbol used only for constructing the code table
 #[derive(PartialEq)]
@@ -160,29 +156,29 @@ pub fn encode(
     symbol_counts.insert(vec![b'1'], 3);
 
     for symbol in symbols {
-            // Ok(symbol) => {
-                // brackets because we gotta return none, and or_insert and
-                // and_modify return values
-                let xs: &u64 = symbol_counts.get(&symbol.to_vec()).unwrap();
-                // let xs: &mut u64 = symbol_counts
-                    // .entry(symbol.to_vec())
-                    // .and_modify(|e| *e += 1)
-                    // .or_insert(1);
-                // weee reference and dereference and reference and ...
-                println!("{:?}", (&symbol, *xs));
-                println!("{:?}\n", code_table.get(&(symbol, *xs)));
-                symbol_counts
-                    .entry(symbol.to_vec())
-                    .and_modify(|e| *e += 1)
-                    .or_insert(1);
-            // }
-            // Err(e) => panic!("error reading file: {:?}", e),
-        }
+        // Ok(symbol) => {
+        // brackets because we gotta return none, and or_insert and
+        // and_modify return values
+        let xs: &u64 = symbol_counts.get(&symbol.to_vec()).unwrap();
+        // let xs: &mut u64 = symbol_counts
+        // .entry(symbol.to_vec())
+        // .and_modify(|e| *e += 1)
+        // .or_insert(1);
+        // weee reference and dereference and reference and ...
+        println!("{:?}", (&symbol, *xs));
+        println!("{:?}\n", code_table.get(&(symbol, *xs)));
+        symbol_counts
+            .entry(symbol.to_vec())
+            .and_modify(|e| *e += 1)
+            .or_insert(1);
+        // }
+        // Err(e) => panic!("error reading file: {:?}", e),
+    }
 }
 
 #[cfg(test)]
 mod t_ans_tests {
-    use crate::t_ans::{generate_table, TableANSConfig, encode};
+    use crate::t_ans::{encode, generate_table, TableANSConfig};
     use std::collections::HashMap;
 
     #[test]
@@ -234,7 +230,14 @@ mod t_ans_tests {
         let table = generate_table(&hm, &test_config);
         println!("{table:?}");
 
-        let v = vec![vec![b'1'], vec![b'0'], vec![b'0'], vec![b'1'], vec![b'0'], vec![b'1']];
+        let v = vec![
+            vec![b'1'],
+            vec![b'0'],
+            vec![b'0'],
+            vec![b'1'],
+            vec![b'0'],
+            vec![b'1'],
+        ];
 
         encode(&v, table, test_config);
     }
