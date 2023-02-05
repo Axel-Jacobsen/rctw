@@ -26,8 +26,7 @@ class uABS(Coder):
 
     You will get intermediate values of e.g. 30.000000000000004
     that *should* be 30, which you take the ceil of which gives
-    you 31 which messes everything up. No wonder why this wasn't
-    working!
+    you 31 which messes everything up. use rANS or tANS instead
     """
 
     def __init__(self, p1: float):
