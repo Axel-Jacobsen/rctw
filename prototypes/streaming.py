@@ -41,7 +41,7 @@ def stream_encode(
 ) -> Tuple[List[int], State]:
     M = sum(freqs.values())
 
-    I = range(l * M, 2 * l * M - 1)
+    I = range(l * M, b * l * M - 1)
     Is = get_Is(coder, I)
 
     state = l * M
@@ -72,7 +72,7 @@ def stream_decode(
 ) -> List[Symbol]:
     M = sum(freqs.values())
 
-    I = range(l * M, 2 * l * M - 1)
+    I = range(l * M, b * l * M - 1)
     Is = get_Is(coder, I)
 
     final_state = l * M  # I[0]
