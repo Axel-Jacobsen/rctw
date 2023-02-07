@@ -4,7 +4,7 @@ import heapq
 from math import floor, ceil
 from functools import lru_cache
 from dataclasses import dataclass
-from typing import Self, Dict, Tuple, List, Type, TypeVar, Generic
+from typing import Dict, Tuple, List
 
 
 State = int
@@ -51,7 +51,6 @@ class uABS(Coder):
         p = self.p1
 
         if s == 0:
-            print((x + 1) / (1 - p))
             return ceil((x + 1) / (1 - p)) - 1
         elif s == 1:
             return floor(x / p)
@@ -101,16 +100,42 @@ class rANS(Coder):
         return s, li * (x // m) + x % m - bs
 
 
-T = TypeVar("T")
-G = TypeVar("G")
+class tANSTable:
+    """
+    It should look something like this:
 
+    Table T[state, symbol] = next_state
+    __________________________________________
+    state, x | 17  18  19  20  21  22  23  ...
+    s = 0    | 10      11      12      13
+    s = 1    |      5               6
+    s = 2    |              2
+    __________________________________________
 
-class Table(dict, Generic[T, G]):
-    "table class; given T != G, this is 'safe' from overwrites"
+    T[17, 2] = 2
+    T[21, 2] = 3
+    T[23, 0] = 13
 
-    def __setitem__(self, k: T, v: G):
-        super().__setitem__(k, v)
-        super().__setitem__(v, k)
+    TODO need a better name for this
+    """
+
+    def __init__(self):
+        self.C_dict: Dict[Tuple[Symbol, State], State] = dict()
+        self.D_dict: Dict[State, Tuple[Symbol, State]] = dict()
+
+    def __repr__(self):
+        return repr(self.C_dict)
+
+    def set_range(self, symbol: Symbol, state_range: range, succeeding_state: State):
+        for state in state_range:
+            self.C_dict[(symbol, state)] = succeeding_state
+            self.D_dict[succeeding_state] = (symbol, state)
+
+    def encode(self, symbol: Symbol, state: State) -> State:
+        return self.C_dict[(symbol, state)]
+
+    def decode(self, state: State) -> Tuple[Symbol, State]:
+        return self.D_dict[state]
 
 
 @dataclass
@@ -128,7 +153,7 @@ class ValuePair:
             value=self.value + 1 / self.prob,
         )
 
-    def __lt__(self, other: Self) -> bool:
+    def __lt__(self, other: "ValuePair") -> bool:
         if self.value == other.value:
             return self.prob < other.prob
         return self.value < other.value
@@ -139,18 +164,15 @@ class tANS(Coder):
         self, symbol_frequencies: Dict[Symbol, int], base: int = 8, l: int = 9
     ):
         self.freqs: Dict[Symbol, int] = symbol_frequencies
+        self._total_num_symbols = sum(self.freqs.values())
         self._table = self._generate_table(base, l)
 
-    def _generate_table(self, base: int, l: int) -> Dict[Symbol, State]:
-        table: Table[
-            State | Tuple[Symbol, State], State | Tuple[Symbol, State]
-        ] = Table()
+    def _generate_table(self, base: int, l: int) -> tANSTable:
+        table: tANSTable = tANSTable()
         heap: List[ValuePair] = []
-        total_num_symbols = sum(list(self.freqs.values()))
 
-        # TODO time this vs. creating a list of ValuePairs and 'heapifying'
         for symbol, freq in self.freqs.items():
-            prob = freq / total_num_symbols
+            prob = freq / self._total_num_symbols
             value = 1 / (2 * prob)
             xs = freq
 
@@ -158,20 +180,31 @@ class tANS(Coder):
                 heap, ValuePair(symbol=symbol, state=xs, prob=prob, value=value)
             )
 
-        for state in range(l, base * l):
+        prev_xs: Dict[Symbol, State] = {
+            sym: l * self._total_num_symbols for sym in self.freqs
+        }
+        for state in range(
+            l * self._total_num_symbols, base * l * self._total_num_symbols
+        ):
             smallest_symbol = heapq.heappop(heap)
-            table[(smallest_symbol.symbol, smallest_symbol.state)] = state
+            table.set_range(
+                smallest_symbol.symbol,
+                range(prev_xs[smallest_symbol.symbol], state + 1),
+                state,
+            )
             heapq.heappush(heap, smallest_symbol.increment())
+            prev_xs[smallest_symbol.symbol] = state
 
         return table
 
     def D(self, x: State) -> Tuple[Symbol, State]:
-        return self._table[x]
+        return self._table.decode(x)
 
     def C(self, s: Symbol, x: State) -> State:
-        return self._table[(s, x)]
+        return self._table.encode(s, x)
 
 
 if __name__ == "__main__":
-    t = tANS({0: 100, 1: 100})
-    print(t._table)
+    t = tANS({0: 3, 1: 3, 2: 2}, base=2, l=1)
+    for pair in sorted(list(t._table.C_dict.items()), key=lambda p: (p[0][1], p[0][0])):
+        print(pair)

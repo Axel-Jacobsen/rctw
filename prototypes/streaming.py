@@ -8,7 +8,7 @@ from math import log, floor, ceil
 from typing import Dict, List, Tuple, Generator
 from collections import defaultdict, OrderedDict
 
-from coder import rANS, Coder, State, Symbol
+from coder import tANS, rANS, Coder, State, Symbol
 
 
 def iter_over_file_bytes(p: str) -> Generator[int, None, None]:
@@ -57,6 +57,7 @@ def stream_encode(
             if state == 0:
                 raise Exception
 
+        print(f"coding {(symbol, state)=}")
         state = coder.C(symbol, state)
 
     return output_stream, state
@@ -102,25 +103,29 @@ def coder_decoder_test(coder: Coder, freqs: Dict[Symbol, int]) -> None:
 if __name__ == "__main__":
     import random
 
-    freqs = {0: 400, 1: 800, 2: 200}
-    coder = rANS(freqs)
+    freqs = {0: 7, 1: 3}
     num_unique_symbols = sum(freqs.keys())
     num_symbols = sum(freqs.values())
-
-    coder_decoder_test(coder, freqs)
 
     vs = freqs.items()
     input_seq = random.choices(
         [v[0] for v in vs], weights=[v[1] for v in vs], k=num_symbols
     )
 
-    l, b = 9, 8
+    l, b = 1, 2
+
+    coder = tANS(freqs, base=b, l=l)
+    # coder = rANS(freqs)
+
+    coder_decoder_test(coder, freqs)
 
     output_stream, fin_state = stream_encode(coder, input_seq, freqs, l=l, b=b)
+
     print(
         f"approx size of input? {num_symbols * log(num_unique_symbols, 2)}",
         f"approx size of compressed? {len(output_stream) + ceil(log(fin_state, 2))}",
     )
+
     decoded = stream_decode(coder, output_stream, fin_state, freqs, l=l, b=b)
 
     assert input_seq == decoded[::-1], f"\n{len(input_seq)=}\n{len(decoded[::-1])=}"
